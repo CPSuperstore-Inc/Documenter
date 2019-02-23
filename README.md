@@ -4,29 +4,29 @@ Creates docs for a python project
 Document an entire directory:
 
 ```python
-from Documenter.Documenter import get_doc_from_dir, doc_to_file
+from Documenter.Documenter import get_doc_from_dir, doc_to_txt
 
 doc = get_doc_from_dir("path_to_directory")
-doc_to_file(doc, "output_file")
+doc_to_txt(doc, "output_file")
 ```
 
 Document a set of files:
 
 ```python
-from Documenter.Documenter import get_doc_from_files, doc_to_file
+from Documenter.Documenter import get_doc_from_files, doc_to_txt
 
 doc = get_doc_from_files(["file1.py", "file2.py", "file3.py"])
-doc_to_file(doc, "output_file")
+doc_to_txt(doc, "output_file")
 ```
 
 
 Document a single file:
 
 ```python
-from Documenter.Documenter import get_doc_from_file, doc_to_file
+from Documenter.Documenter import get_doc_from_file, doc_to_txt
 
 doc = get_doc_from_file("file.py")
-doc_to_file(doc, "output_file")
+doc_to_txt(doc, "output_file")
 ```
 
 output format:
