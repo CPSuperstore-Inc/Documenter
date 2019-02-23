@@ -15,6 +15,7 @@ def dict2xml(data:dict):
     def get_function(xml, func_json, tab_level_adder=0):
         for func, info in func_json["functions"].items():
             xml += "\t" * (tab_level + tab_level_adder) + "<function name='{}'>\n".format(func)
+            xml += "\t" * (tab_level + 1) + "<docstring>{}</docstring>\n".format(info["doc"])
             for arg in info["args"]:
                 xml += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}'/>\n".format(arg['name'], arg['type'])
             xml += "\t" * (tab_level + tab_level_adder) + "</function>\n"
@@ -23,6 +24,7 @@ def dict2xml(data:dict):
     def get_classes(xml, class_json):
         for class_name, info in class_json["classes"].items():
             xml += "\t" * tab_level + "<class name='{}'>\n".format(class_name)
+            xml += "\t" * (tab_level + 1) +"<docstring>{}</docstring>\n".format(info["doc"])
             xml = get_function(xml, {"functions": info["func"]}, 1)
             xml += "\t" * tab_level + "</class>\n"
         return xml
