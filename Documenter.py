@@ -7,48 +7,73 @@ import json
 
 MISSING_DOCSTRING_MESSAGE = "N/A"
 
-def path_to_dot_notation(filename:str, start_dir:str):
-    return filename.replace(start_dir, "")[1:].replace(".py", "").replace("/", ".").replace("\\", ".")
+
+# region File To Dict Converters (what the user calls)
+def get_doc_from_file(filename:str, start_dir=None):
+    if start_dir is None:
+        start_dir = os.path.dirname(filename)
+    output = file_to_dict(filename, start_dir)
+    if output is None:
+        return {}
+    return {path_to_dot_notation(filename, start_dir): output}
 
 
-def dict2xml(data:dict):
-    def get_function(xml, func_json, tab_level_adder=0):
-        for func, info in func_json["functions"].items():
-            xml += "\t" * (tab_level + tab_level_adder) + "<function name='{}'>\n".format(func)
-            xml += "\t" * (tab_level + 1) + "<docstring>{}</docstring>\n".format(info["doc"])
-            for arg in info["args"]:
-                xml += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}'/>\n".format(arg['name'], arg['type'])
-            xml += "\t" * (tab_level + tab_level_adder) + "</function>\n"
-        return xml
-
-    def get_classes(xml, class_json):
-        for class_name, info in class_json["classes"].items():
-            xml += "\t" * tab_level + "<class name='{}'>\n".format(class_name)
-            xml += "\t" * (tab_level + 1) +"<docstring>{}</docstring>\n".format(info["doc"])
-            xml = get_function(xml, {"functions": info["func"]}, 1)
-            xml += "\t" * tab_level + "</class>\n"
-        return xml
-
-    if "functions" in data:
-        data = {"some_unused_string": data}
-
-    tab_level = 0
-
-    xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<docs>\n"
-
-    tab_level += 1
-    for fname, d in data.items():
-        xml += "\t" * tab_level + "<module name='{}'>\n".format(fname)
-        tab_level += 1
-        xml = get_classes(xml, d)
-        xml = get_function(xml, d)
-        tab_level -= 1
-        xml += "\t" * tab_level + "</module>\n"
-
-    xml += "</docs>"
-    return xml
+def get_doc_from_files(files:List[str], start_dir=None):
+    output = {}
+    for f in files:
+        val = get_doc_from_file(f, start_dir)
+        if val == {}:
+            continue
+        output.update(val)
+    return output
 
 
+def get_doc_from_dir(path:str, start_dir=None):
+    if start_dir is None:
+        start_dir = path
+    output = {}
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            if name.endswith(".py"):
+                val = get_doc_from_file(os.path.join(root, name), start_dir)
+                if val == {}:
+                    continue
+                output.update(val)
+    return output
+# endregion
+
+
+# region Functions Which Write To Files
+def doc_to_txt(doc:dict, filename:str):
+    doc_text = dict2ascii(doc)
+    tmp = open(filename, 'w')
+    tmp.write(doc_text)
+    tmp.close()
+
+
+def doc_to_json(doc:dict, filename:str):
+    output = json.dumps(doc)
+    tmp = open(filename, 'w')
+    tmp.write(output)
+    tmp.close()
+
+
+def doc_to_xml(doc:dict, filename:str):
+    output = dict2xml(doc)
+    tmp = open(filename, 'w')
+    tmp.write(output)
+    tmp.close()
+
+
+def doc_to_mysql(doc:dict, filename:str):
+    output = dict2mysql(doc)
+    tmp = open(filename, 'w')
+    tmp.write(output)
+    tmp.close()
+# endregion
+
+
+# region Python File To Dict Notation
 def file_to_dict(filename:str, start_dir:str):
     if start_dir is None:
         start_dir = filename
@@ -61,6 +86,7 @@ def file_to_dict(filename:str, start_dir:str):
 
     if fdata == "":
         return None
+
     tree = ast.parse(fdata)
 
     func = [f for f in tree.body if isinstance(f, _ast.FunctionDef)]
@@ -104,102 +130,229 @@ def parse_class(obj):
         classes[c.name] = {"func": parse_function(c.body), "doc": get_docstring(c.body)}
 
     return classes
+# endregion
 
 
-def get_doc_from_file(filename:str, start_dir=None):
-    output = file_to_dict(filename, start_dir)
-    if output is None:
-        return {}
-    return output
+# region Dict to Other Format Converters
+# region XML
+def dict2xml(data:dict):
+    def get_function(xml_text, func_json, tab_level_adder=0):
+        for func, info in func_json["functions"].items():
+            xml_text += "\t" * (tab_level + tab_level_adder) + "<function name='{}'>\n".format(func)
+            xml_text += "\t" * (tab_level + 1) + "<docstring>{}</docstring>\n".format(info["doc"])
+            for arg in info["args"]:
+                xml_text += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}'/>\n".format(arg['name'], arg['type'])
+            xml_text += "\t" * (tab_level + tab_level_adder) + "</function>\n"
+        return xml_text
+
+    def get_classes(xml_text, class_json):
+        for class_name, info in class_json["classes"].items():
+            xml_text += "\t" * tab_level + "<class name='{}'>\n".format(class_name)
+            xml_text += "\t" * (tab_level + 1) +"<docstring>{}</docstring>\n".format(info["doc"])
+            xml_text = get_function(xml_text, {"functions": info["func"]}, 1)
+            xml_text += "\t" * tab_level + "</class>\n"
+        return xml_text
+
+    if "functions" in data:
+        data = {"some_unused_string": data}
+
+    tab_level = 0
+
+    xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<docs>\n"
+
+    tab_level += 1
+    for fname, d in data.items():
+        xml += "\t" * tab_level + "<module name='{}'>\n".format(fname)
+        tab_level += 1
+        xml = get_classes(xml, d)
+        xml = get_function(xml, d)
+        tab_level -= 1
+        xml += "\t" * tab_level + "</module>\n"
+
+    xml += "</docs>"
+    return xml
+# endregion
 
 
-def get_doc_from_files(files:List[str], start_dir=None):
-    output = {}
-    for f in files:
-        val = get_doc_from_file(f, start_dir)
-        if val == {}:
-            continue
-        output[path_to_dot_notation(f, start_dir)] = val
-
-    return output
-
-
-def get_doc_from_dir(path:str, start_dir=None):
-    output = {}
-    for root, dirs, files in os.walk(path, topdown=False):
-        for name in files:
-            if name.endswith(".py"):
-                val = get_doc_from_file(os.path.join(root, name), start_dir)
-                if val == {}:
-                    continue
-                output[path_to_dot_notation(os.path.join(root, name), start_dir)] = val
-    return output
-
-
-def doc_to_txt(doc:dict, filename:str):
-
-    def format_output(mod_data: dict):
-        if "functions" in mod_data:
-            mod_data = {"some_unused_string": mod_data}
-        output = ""
-        for fname, mod in mod_data.items():
-            functions = mod["functions"]
-            classes = mod["classes"]
-            name = mod["file"]
-
-            output += name + "\n"
-
-            if len(classes) < 1 and len(functions) < 1:
-                output += "\tThis File Does Not Contain Any Functions Or Classes.\n\n"
-
-            if len(classes) > 0:
-                output += "\tClasses:\n"
-
-                for name, c in classes.items():
-                    output += "\t\t" + name + "\n"
-                    if c["doc"] != MISSING_DOCSTRING_MESSAGE:
-                        output += "\t\t\tDocstring:\n"
-                        output += "\t\t\t\t" + c["doc"].replace("\n", "\n\t\t") + "\n"
-                    output += "\t\t\tMethods:\n"
-                    for n, f in c["func"].items():
-                        output += display_function(4, n, f)
-
-            if len(functions) > 0:
-                output += "\tFunctions:\n"
-                for n, f in functions.items():
-                    output += display_function(2, n, f)
-        return output
-
-    def display_function(tab_level: int, name, func):
+# region ASCII (Text)
+def dict2ascii(mod_data: dict):
+    def display_function(tab_level: int, func_name, func):
         base_tab = "\t" * tab_level
-        output = base_tab + name + "\n"
+        output_text = base_tab + func_name + "\n"
         if func["doc"] != MISSING_DOCSTRING_MESSAGE:
-            output += base_tab + "\tDocstring:\n"
-            output += base_tab + "\t\t" + func["doc"].replace("\n", "\n\t\t") + "\n"
-        output += base_tab + "\tArguements:\n"
+            output_text += base_tab + "\tDocstring:\n"
+            output_text += base_tab + "\t\t" + func["doc"].replace("\n", "\n\t\t") + "\n"
+        output_text += base_tab + "\tArguements:\n"
 
         for arg in func["args"]:
-            output += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ")" + "\n"
-        output += "\n"
+            output_text += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ")" + "\n"
+        output_text += "\n"
 
-        return output
+        return output_text
 
-    doc_text = format_output(doc)
+    if "functions" in mod_data:
+        mod_data = {"some_unused_string": mod_data}
+    output = ""
+    for fname, mod in mod_data.items():
+        functions = mod["functions"]
+        classes = mod["classes"]
+        name = mod["file"]
 
-    tmp = open(filename, 'w')
-    tmp.write(doc_text)
-    tmp.close()
+        output += name + "\n"
+
+        if len(classes) < 1 and len(functions) < 1:
+            output += "\tThis File Does Not Contain Any Functions Or Classes.\n\n"
+
+        if len(classes) > 0:
+            output += "\tClasses:\n"
+
+            for name, c in classes.items():
+                output += "\t\t" + name + "\n"
+                if c["doc"] != MISSING_DOCSTRING_MESSAGE:
+                    output += "\t\t\tDocstring:\n"
+                    output += "\t\t\t\t" + c["doc"].replace("\n", "\n\t\t") + "\n"
+                output += "\t\t\tMethods:\n"
+                for n, f in c["func"].items():
+                    output += display_function(4, n, f)
+
+        if len(functions) > 0:
+            output += "\tFunctions:\n"
+            for n, f in functions.items():
+                output += display_function(2, n, f)
+    return output
+# endregion
 
 
-def doc_to_json(doc:dict, filename:str):
-    output = json.dumps(doc)
-    tmp = open(filename, 'w')
-    tmp.write(output)
-    tmp.close()
+# region MySQL
+def dict2mysql(mod_data: dict):
+    create_statement = """
+        CREATE TABLE `files` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(50) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`)
+        );
+        CREATE TABLE `classes` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `fileId` INT(11) NOT NULL,
+            `name` VARCHAR(50) NOT NULL,
+            `docstring` LONGTEXT NULL,
+            PRIMARY KEY (`id`)
+        );
+        CREATE TABLE `functions` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `classId` INT(11) NULL DEFAULT NULL,
+            `fileId` INT(11) NOT NULL,
+            `name` VARCHAR(50) NOT NULL,
+            `docstring` LONGTEXT NULL,
+            PRIMARY KEY (`id`)
+        );
+        CREATE TABLE `args` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `functionId` INT(11) NOT NULL,
+            `order` INT(11) NOT NULL,
+            `name` TEXT NOT NULL,
+            `type` VARCHAR(50) NULL DEFAULT NULL,
+            `value` VARCHAR(50) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`)
+        );
+    """
+
+    filenames = {}
+    functions = {}
+    classes = {}
+
+    # region File Names
+    sql = create_statement
+    sql += "INSERT INTO files (id, name) VALUES "
+    index = 1
+    for filename, data in mod_data.items():
+        sql += "({}, '{}'), ".format(index, filename)
+        filenames[filename] = index
+        index += 1
+    sql = sql[:-2] + ";\n"
+    # endregion
+
+    # region Write Functions
+    def insert_functions(func, fname, functions, class_id=None):
+
+        if len(func) == 0:
+            return ""
+
+        if class_id is None:
+            class_id = "null"
+
+        file_id = filenames[fname]
+
+        try:
+            i = max(functions.values()) + 1
+        except ValueError:
+            i = 1
+
+        sql = "INSERT INTO functions VALUES "
+        args_sql = "INSERT INTO args (`functionId`, `order`, `name`, `type`, `value`) VALUES "
+        for name, d in func.items():
+            functions["{}.{}".format(fname, name)] = i
+            sql += "({}, {}, {}, '{}', '{}'), ".format(i, class_id, file_id, name, d['doc'])
+            args_sql += insert_args(d["args"], i)
+            i += 1
+
+        return sql[:-2] + ";\n" + args_sql[:-2] + ";\n"
+    # endregion
+
+    # region Arguements
+    def insert_args(args, function_id):
+
+        statement = ""
+
+        order = 0
+        for a in args:
+            statement += "({}, {}, '{}', '{}', 'NotImplemented'), ".format(function_id, order, a['name'], a['type'])
+            order += 1
+
+        return statement
+    # endregion
+
+    # region Class Writer
+    def insert_classes(c, fname, classes):
+        if len(c) == 0:
+            return ""
+
+        statement = "INSERT INTO classes VALUES "
+
+        try:
+            i = max(classes.values()) + 1
+        except ValueError:
+            i = 1
+
+        file_id = filenames[fname]
+
+        function_query = ""
+
+        for name, d in c.items():
+            func = d["func"]
+            doc = d["doc"]
+            statement += "({}, {}, '{}', '{}'), ".format(i, file_id, name, doc)
+            classes["{}.{}".format(fname, name)] = i
+            function_query += insert_functions(func, filename, functions, i)
+            i += 1
+
+        statement = statement[:-2] + ";\n" + function_query
+
+        return statement
+    # endregion
+
+    for filename, data in mod_data.items():
+        sql += insert_functions(data["functions"], filename, functions)
+        sql += insert_classes(data["classes"], filename, classes)
+
+    return sql
+
+# endregion
+
+# endregion
 
 
-def doc_to_xml(doc:dict, filename:str):
-    output = dict2xml(doc)
-    tmp = open(filename, 'w')
-    tmp.write(output)
-    tmp.close()
+# region Misc Functions
+def path_to_dot_notation(filename:str, start_dir = None):
+    return filename.replace(start_dir, "")[1:].replace(".py", "").replace("/", ".").replace("\\", ".")
+# endregion

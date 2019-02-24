@@ -31,7 +31,7 @@ doc_to_txt(doc, "output_file")
 
 output format:
 ```
-path/to/file.py
+path.to.file.py
     Classes:
         ClassName
             Docstring:
@@ -51,3 +51,13 @@ path/to/file.py
                 arg1 (type)
                 arg2 (type)
 ```
+
+`doc_to_txt` is not the only output mode! Here are the other output modes you can use:
+
+`doc_to_txt` - Outputs as an ASCII text tree
+ 
+`doc_to_json` - Outputs as JSON
+
+`doc_to_xml` - Outputs as XML
+
+`doc_to_mysql` - Outputs as a file of MySQL queries to run on a MySQL database
