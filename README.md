@@ -61,3 +61,5 @@ path.to.file.py
 `doc_to_xml` - Outputs as XML
 
 `doc_to_mysql` - Outputs as a file of MySQL queries to run on a MySQL database
+
+`doc_to_html` - Outputs as an HTML file. All output is placed inside a `<div>` tag, with no other tags or styles

@@ -70,6 +70,13 @@ def doc_to_mysql(doc:dict, filename:str):
     tmp = open(filename, 'w')
     tmp.write(output)
     tmp.close()
+
+
+def doc_to_html(doc:dict, filename:str):
+    output = dict2html(doc)
+    tmp = open(filename, 'w')
+    tmp.write(output)
+    tmp.close()
 # endregion
 
 
@@ -348,6 +355,11 @@ def dict2mysql(mod_data: dict):
     return sql
 
 # endregion
+
+def dict2html(mod_data:dict):
+    mod_data = dict2ascii(mod_data)
+    mod_data = mod_data.replace("\t", "&nbsp;" * 4).replace("\n", "<br>")
+    return "<div>{}</div>".format(mod_data)
 
 # endregion
 
