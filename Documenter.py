@@ -1,10 +1,11 @@
+# import built-in modules
 import os
 from typing import List
 import ast
 import _ast
 import json
 
-
+# the message to put in place of a missing docstring
 MISSING_DOCSTRING_MESSAGE = "N/A"
 
 
@@ -303,39 +304,92 @@ def parse_class(obj):
 # region Dict to Other Format Converters
 # region XML
 def dict2xml(data:dict):
+    """
+    this function returns the specified data as an XML string
+    :param data: the data to convert to XML
+    :return: the data in XML format
+    """
     def get_function(xml_text, func_json, tab_level_adder=0):
+        """
+        this function converts a Python function to XML
+        :param xml_text: the current XML string
+        :param func_json: the JSON version of the function to convert
+        :param tab_level_adder: The number of extra tabs needed for the start of the XML
+        :return: 
+        """
+
+        # iterate over each function provided
         for func, info in func_json["functions"].items():
+
+            # create the opening tag, which displays the function's name
             xml_text += "\t" * (tab_level + tab_level_adder) + "<function name='{}'>\n".format(func)
+
+            # create the docstring tag
             xml_text += "\t" * (tab_level + 1) + "<docstring>{}</docstring>\n".format(info["doc"])
+
+            # add the arguement tags, which displays the function's name, type, and default value
             for arg in info["args"]:
                 xml_text += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}' value='{}'/>\n".format(arg['name'], arg['type'], arg['value'])
+
+            # add the closing function tag
             xml_text += "\t" * (tab_level + tab_level_adder) + "</function>\n"
+
+        # return the XML string
         return xml_text
 
     def get_classes(xml_text, class_json):
+        """
+        This function converts each class to XML
+        :param xml_text: the full XML string
+        :param class_json: the JSON object we are working with
+        :return: the newly updated XML
+        """
+
+        # iterate over each class
         for class_name, info in class_json["classes"].items():
+
+            # create the opening tag, which contains the class name
             xml_text += "\t" * tab_level + "<class name='{}'>\n".format(class_name)
+
+            # create the docstring tag
             xml_text += "\t" * (tab_level + 1) +"<docstring>{}</docstring>\n".format(info["doc"])
+
+            # use the 'get_function' function to generate XML from the classes methods
             xml_text = get_function(xml_text, {"functions": info["func"]}, 1)
+
+            # close the class tag
             xml_text += "\t" * tab_level + "</class>\n"
+
+            # return the XML string
         return xml_text
 
+    # if this function is a single dict, put it in a parent dict
     if "functions" in data:
         data = {"some_unused_string": data}
 
     tab_level = 0
 
+    # create the XML shema line
     xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<docs>\n"
 
+    # iterate over each module
     tab_level += 1
     for fname, d in data.items():
+
+        # create the opening "module" tag, which contains the name
         xml += "\t" * tab_level + "<module name='{}'>\n".format(fname)
         tab_level += 1
+
+        # generate the functions and classes from the module
         xml = get_classes(xml, d)
         xml = get_function(xml, d)
+
         tab_level -= 1
+
+        # close the module tag
         xml += "\t" * tab_level + "</module>\n"
 
+    # finish up the XML and return it
     xml += "</docs>"
     return xml
 # endregion
@@ -343,55 +397,104 @@ def dict2xml(data:dict):
 
 # region ASCII (Text)
 def dict2ascii(mod_data: dict):
+    """
+    this function returns the specified data as a text ASCII tree string
+    :param mod_data: the data to convert to a text ASCII tree
+    :return: the data in a text ASCII tree format
+    """
     def display_function(tab_level: int, func_name, func):
+        """
+        This function displays a function in tree format
+        :param tab_level: the number of tabs to place before the function
+        :param func_name: the function's display name
+        :param func: the function as a dict
+        :return: the ASCII tree function
+        """
+
+        # generate the base number of tabs
         base_tab = "\t" * tab_level
+
+        # create the function name line
         output_text = base_tab + func_name + "\n"
+
+        # if the function has a docstring, add it to the tree
+        # will not display the docstring title if it is not defined
         if func["doc"] != MISSING_DOCSTRING_MESSAGE:
             output_text += base_tab + "\tDocstring:\n"
             output_text += base_tab + "\t\t" + func["doc"].replace("\n", "\n\t\t") + "\n"
+
+        # add the arguements
         output_text += base_tab + "\tArguements:\n"
 
+        # iterate over each arg
         for arg in func["args"]:
+
+            # add the name, type, and value to the string
             output_text += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ") = " + str(arg["value"]) + "\n"
         output_text += "\n"
 
+        # return the text
         return output_text
 
+    # ensure the module is not a single module
     if "functions" in mod_data:
         mod_data = {"some_unused_string": mod_data}
+
+    # iterate over each module
     output = ""
     for fname, mod in mod_data.items():
+
+        # extract the functions, classes, and filename
         functions = mod["functions"]
         classes = mod["classes"]
         name = mod["file"]
 
         output += name + "\n"
 
+        # if the module has no functions, and no classes, output the "no functions or classes" message
         if len(classes) < 1 and len(functions) < 1:
             output += "\tThis File Does Not Contain Any Functions Or Classes.\n\n"
 
         if len(classes) > 0:
+            # if the file has classes, generate the class text
             output += "\tClasses:\n"
 
+            # iterate over each class
             for name, c in classes.items():
+
+                # create the title line
                 output += "\t\t" + name + "\n"
+
+                # add a docstring line if the class has a docstring
                 if c["doc"] != MISSING_DOCSTRING_MESSAGE:
                     output += "\t\t\tDocstring:\n"
                     output += "\t\t\t\t" + c["doc"].replace("\n", "\n\t\t") + "\n"
+
+                # display the classes functions
                 output += "\t\t\tMethods:\n"
                 for n, f in c["func"].items():
                     output += display_function(4, n, f)
 
+        # if the file has funcitons, display the functions
         if len(functions) > 0:
             output += "\tFunctions:\n"
             for n, f in functions.items():
                 output += display_function(2, n, f)
+
+    # return the output
     return output
 # endregion
 
 
 # region MySQL
 def dict2mysql(mod_data: dict):
+    """
+    this function returns the specified data as a file of MySQL commands
+    :param mod_data: the data to convert to a file of MySQL commands
+    :return: the data in MySQL command format
+    """
+
+    # generate the create statement, and drop tables if they are there
     create_statement = """
         DROP TABLE IF EXISTS `files`;
         DROP TABLE IF EXISTS `classes`;
@@ -428,101 +531,164 @@ def dict2mysql(mod_data: dict):
         );
     """
 
+    sql = create_statement
+
+    # dictionaries to store the IDs of classes, functions and files
     filenames = {}
     functions = {}
     classes = {}
 
     # region File Names
-    sql = create_statement
+
+    # insert each file name with one command
     sql += "INSERT INTO files (id, name) VALUES "
     index = 1
+
+    # iterate over each file
     for filename, data in mod_data.items():
+
+        # add to the SQL and dict
         sql += "({}, '{}'), ".format(index, filename)
         filenames[filename] = index
         index += 1
+
+    # finish up the SQL statement
     sql = sql[:-2] + ";\n"
     # endregion
 
     # region Write Functions
     def insert_functions(func, fname, funcs, class_id=None):
+        """
+        this function adds the SQL commands for each function
+        :param func: the function objects
+        :param fname: the filename
+        :param funcs: the dictionary which stores the function names and IDs
+        :param class_id: the ID of the class which the function is in (None for not in a class)
+        :return: the function SQL commands
+        """
 
+        # if there are no functions, return an empty string
         if len(func) == 0:
             return ""
 
+        # if no class is specified, use null
         if class_id is None:
             class_id = "null"
 
+        # get the file ID
         file_id = filenames[fname]
 
+        # get the initial ID of the function
         try:
             i = max(funcs.values()) + 1
         except ValueError:
             i = 1
 
+        # generate the start of the function and arguement query
         query = "INSERT INTO functions VALUES "
         args_sql = "INSERT INTO args (`functionId`, `order`, `name`, `type`, `value`) VALUES "
+
+        # iterate over each function
         for name, d in func.items():
+
+            # add the ID to the function dict, with the key of filename.func_name
             funcs["{}.{}".format(fname, name)] = i
+
+            # add the function and arg queries
             query += "({}, {}, {}, '{}', '{}'), ".format(i, class_id, file_id, name, d['doc'])
             args_sql += insert_args(d["args"], i)
             i += 1
 
+        # return the func, and arg queries
         return query[:-2] + ";\n" + args_sql[:-2] + ";\n"
     # endregion
 
     # region Arguements
     def insert_args(args, function_id):
+        """
+        This function generates the SQL commands for each arguement
+        :param args: the list of args
+        :param function_id: the affiliated function ID
+        :return: the SQL string
+        """
 
         statement = ""
 
+        # iterate over each arguement
         order = 0
         for a in args:
+
+            # if the arguement does not specify a value, set to null
             if a['value'] is None:
                 val = 'null'
             else:
+                # if the item is a number, do not surround with quotes
                 try:
-                    val = float(a['value'])
+                    int(a['value'])
+                    val = a['value']
                 except (ValueError, TypeError):
                     val = "'{}'".format(a['value'])
+
+            # add to the SQL statement
             statement += "({}, {}, '{}', '{}', {}), ".format(function_id, order, a['name'], a['type'], val)
             order += 1
 
+        # return the statement
         return statement
     # endregion
 
     # region Class Writer
     def insert_classes(c, fname, class_list):
+        """
+        this function generates the SQL for each class
+        :param c: the dict of classes
+        :param fname: the filename
+        :param class_list: the dict of class IDs
+        :return: the list of SQL statements for the class
+        """
+
+        # if there are no classes, return an empty string
         if len(c) == 0:
             return ""
 
         statement = "INSERT INTO classes VALUES "
 
+        # get the initial class ID
         try:
             i = max(class_list.values()) + 1
         except ValueError:
             i = 1
 
+        # get the file ID
         file_id = filenames[fname]
 
         function_query = ""
 
+        # iterate over each class
         for name, d in c.items():
+
+            # add to the SQL statement
             func = d["func"]
             doc = d["doc"]
             statement += "({}, {}, '{}', '{}'), ".format(i, file_id, name, doc)
+
+            # add the ID to the dict in the format filename.class
             class_list["{}.{}".format(fname, name)] = i
             function_query += insert_functions(func, filename, functions, i)
             i += 1
 
+        # finish off the statement, and return it
         statement = statement[:-2] + ";\n" + function_query
-
         return statement
     # endregion
 
+    # iterate over each file in the doc dict
     for filename, data in mod_data.items():
+        # add the function and class SQL to the main statement
         sql += insert_functions(data["functions"], filename, functions)
         sql += insert_classes(data["classes"], filename, classes)
 
+    # return the SQL statement
     return sql
 
 # endregion
@@ -530,8 +696,20 @@ def dict2mysql(mod_data: dict):
 
 # region HTML
 def dict2html(mod_data:dict):
+    """
+    this function returns the specified data as HTML string
+    :param mod_data: the data to convert to HTML
+    :return: the data in HTML format
+    """
+
+    # get an ASCII tree represenation of the doc dict
     mod_data = dict2ascii(mod_data)
+
+    # convert each tab to 4 non-breaking space characters,
+    # and each end of line character to a line break tag (<br>)
     mod_data = mod_data.replace("\t", "&nbsp;" * 4).replace("\n", "<br>")
+
+    # return the HTML data between a pair of div tags
     return "<div>{}</div>".format(mod_data)
 # endregion
 
