@@ -112,14 +112,26 @@ def parse_function(func):
         if not type(f) is _ast.FunctionDef:
             continue
         functions[f.name] = {"args": []}
+        i = 0
         for a in f.args.args:
             data_type = "any"
-            if a.annotation is not None:
-                data_type = a.annotation.id
-            functions[f.name]["args"].append({"name": a.arg, "type": data_type})
 
+            if a.annotation is not None:
+                if hasattr(a.annotation, 'id'):
+                    data_type = a.annotation.id
+                else:
+                    data_type = "unknown"
+            functions[f.name]["args"].append({"name": a.arg, "type": data_type, "value": None})
+        i += 1
         functions[f.name]["doc"] = get_docstring(f.body)
 
+        values = f.args.defaults
+        values.reverse()
+        index = 1
+        for val in values:
+            data = ast.literal_eval(val)
+            functions[f.name]["args"][index * -1]["value"] = data
+            index += 1
     return functions
 
 
@@ -148,7 +160,7 @@ def dict2xml(data:dict):
             xml_text += "\t" * (tab_level + tab_level_adder) + "<function name='{}'>\n".format(func)
             xml_text += "\t" * (tab_level + 1) + "<docstring>{}</docstring>\n".format(info["doc"])
             for arg in info["args"]:
-                xml_text += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}'/>\n".format(arg['name'], arg['type'])
+                xml_text += "\t" * (tab_level + 1 + tab_level_adder) + "<arg name='{}' type='{}' value='{}'/>\n".format(arg['name'], arg['type'], arg['value'])
             xml_text += "\t" * (tab_level + tab_level_adder) + "</function>\n"
         return xml_text
 
@@ -192,7 +204,7 @@ def dict2ascii(mod_data: dict):
         output_text += base_tab + "\tArguements:\n"
 
         for arg in func["args"]:
-            output_text += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ")" + "\n"
+            output_text += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ") = " + str(arg["value"]) + "\n"
         output_text += "\n"
 
         return output_text
@@ -233,6 +245,10 @@ def dict2ascii(mod_data: dict):
 # region MySQL
 def dict2mysql(mod_data: dict):
     create_statement = """
+        DROP TABLE IF EXISTS `files`;
+        DROP TABLE IF EXISTS `classes`;
+        DROP TABLE IF EXISTS `functions`;
+        DROP TABLE IF EXISTS `args`;
         CREATE TABLE `files` (
             `id` INT(11) NOT NULL AUTO_INCREMENT,
             `name` VARCHAR(50) NULL DEFAULT NULL,
@@ -313,7 +329,14 @@ def dict2mysql(mod_data: dict):
 
         order = 0
         for a in args:
-            statement += "({}, {}, '{}', '{}', 'NotImplemented'), ".format(function_id, order, a['name'], a['type'])
+            if a['value'] is None:
+                val = 'null'
+            else:
+                try:
+                    val = float(a['value'])
+                except (ValueError, TypeError):
+                    val = "'{}'".format(a['value'])
+            statement += "({}, {}, '{}', '{}', {}), ".format(function_id, order, a['name'], a['type'], val)
             order += 1
 
         return statement
@@ -356,10 +379,12 @@ def dict2mysql(mod_data: dict):
 
 # endregion
 
+# region HTML
 def dict2html(mod_data:dict):
     mod_data = dict2ascii(mod_data)
     mod_data = mod_data.replace("\t", "&nbsp;" * 4).replace("\n", "<br>")
     return "<div>{}</div>".format(mod_data)
+# endregion
 
 # endregion
 
