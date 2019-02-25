@@ -1,12 +1,22 @@
-# import built-in modules
+# region Imports
 import os
 from typing import List
 import ast
 import _ast
 import json
+import sys
+# endregion
 
+
+# region Global Variables
 # the message to put in place of a missing docstring
 MISSING_DOCSTRING_MESSAGE = "N/A"
+
+HELP_TEXT = """
+SYNTAX:
+    Documenter FILETYPE FILES... OUTPUT_FILE
+"""
+# endregion
 
 
 # region File To Dict Converters (what the user calls)
@@ -728,3 +738,42 @@ def path_to_dot_notation(filename:str, start_dir = None):
     # convert and return the filename
     return filename.replace(start_dir, "")[1:].replace(".py", "").replace("/", ".").replace("\\", ".")
 # endregion
+
+
+# region Command Line Interface
+if __name__ == '__main__':
+    # the filetype and function call key value dict
+    output_types = {
+        "txt": doc_to_txt,
+        "json": doc_to_json,
+        "xml": doc_to_xml,
+        "mysql": doc_to_mysql,
+        "html": doc_to_html
+    }
+
+    # if an insufficient number of args are specified, display help text, and exit with code -1
+    if len(sys.argv) < 4:
+        print(HELP_TEXT)
+        quit(-1)
+
+    # get the arguemsnts
+    output_type = sys.argv[1].lower()   # display type (ex. html, txt, xml)
+    input_file = sys.argv[2]            # the input file/directory
+    output_file = sys.argv[3]           # the output file
+
+    # if an invalid output type is selected, alert the user, and provide a list of expected inputs
+    # also exit with a code of -1
+    if output_type not in output_types.keys():
+        print("{} Is An Invalid File Type. Please Select One From The Following List:\n{}".format(output_type, ", ".join(output_types.keys())))
+        quit(-1)
+
+    doc_dict = {}
+
+    # if path is directory, get doc from dir
+    if os.path.isdir(input_file):
+        doc_dict = get_doc_from_dir(input_file)
+
+    # create the file
+    output_types[output_type](doc_dict, output_file)
+# endregion
+
