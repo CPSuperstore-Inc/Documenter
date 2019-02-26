@@ -108,71 +108,96 @@ def get_doc_from_dir(path:str, start_dir=None):
 
 
 # region Functions Which Write To Files
-def doc_to_txt(doc:dict, filename:str):
+def doc_to_txt(doc:dict, filename:str=None):
     """
     outputs the doc dict as a text file (as an ASCII tree format)
     :param doc: the doc dict to write
-    :param filename: the output filename
+    :param filename: the output filename - leave blank to have value returned
     """
 
     # convert the dict to ASCII, and write it to the file
-    doc_text = dict2ascii(doc)
+    output = dict2ascii(doc)
+
+    # if no output file is specified, return the value
+    if filename is None:
+        return output
+
     tmp = open(filename, 'w')
-    tmp.write(doc_text)
+    tmp.write(output)
     tmp.close()
 
 
-def doc_to_json(doc:dict, filename:str):
+def doc_to_json(doc:dict, filename:str=None):
     """
     outputs the doc dict as a JSON file
     :param doc: the doc dict to write
-    :param filename: the output filename
+    :param filename: the output filename - leave blank to have value returned
     """
 
     # convert the dict to JSON, and write it to the file
     output = json.dumps(doc)
+
+    # if no output file is specified, return the value
+    if filename is None:
+        return output
+
     tmp = open(filename, 'w')
     tmp.write(output)
     tmp.close()
 
 
-def doc_to_xml(doc:dict, filename:str):
+def doc_to_xml(doc:dict, filename:str=None):
     """
     outputs the doc dict as a XML file
     :param doc: the doc dict to write
-    :param filename: the output filename
+    :param filename: the output filename - leave blank to have value returned
     """
 
     # convert the dict to XML, and write it to the file
     output = dict2xml(doc)
+
+    # if no output file is specified, return the value
+    if filename is None:
+        return output
+
     tmp = open(filename, 'w')
     tmp.write(output)
     tmp.close()
 
 
-def doc_to_mysql(doc:dict, filename:str):
+def doc_to_mysql(doc:dict, filename:str=None):
     """
     outputs the doc dict as a file of MySQL Commands
     :param doc: the doc dict to write
-    :param filename: the output filename
+    :param filename: the output filename - leave blank to have value returned
     """
 
     # convert the dict to MySQL commands, and write it to the file
     output = dict2mysql(doc)
+
+    # if no output file is specified, return the value
+    if filename is None:
+        return output
+
     tmp = open(filename, 'w')
     tmp.write(output)
     tmp.close()
 
 
-def doc_to_html(doc:dict, filename:str):
+def doc_to_html(doc:dict, filename:str=None):
     """
     outputs the doc dict as an HTML file (as an ASCII tree format)
     :param doc: the doc dict to write
-    :param filename: the output filename
+    :param filename: the output filename - leave blank to have value returned
     """
 
     # convert the dict to HTML, and write it to the file
     output = dict2html(doc)
+
+    # if no output file is specified, return the value
+    if filename is None:
+        return output
+
     tmp = open(filename, 'w')
     tmp.write(output)
     tmp.close()
