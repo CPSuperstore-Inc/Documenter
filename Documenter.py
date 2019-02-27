@@ -20,11 +20,12 @@ SYNTAX:
 
 
 # region File To Dict Converters (what the user calls)
-def get_doc_from_file(filename:str, start_dir=None):
+def get_doc_from_file(filename:str, start_dir=None, ignore_no_docstr:bool=False):
     """
     Generates a documentation dictionary from a single file
     :param filename: the name of the file to generate documentation from
     :param start_dir: the relative path to start the file's display name (in dot notation)
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: the documentation dictionary
     """
 
@@ -33,7 +34,7 @@ def get_doc_from_file(filename:str, start_dir=None):
         start_dir = os.path.dirname(filename)
 
     # generate the dictionary from the path
-    output = file_to_dict(filename, start_dir)
+    output = file_to_dict(filename, start_dir, ignore_no_docstr)
 
     # if no output is created, set the value to an empty dict
     if output is None:
@@ -44,11 +45,12 @@ def get_doc_from_file(filename:str, start_dir=None):
     return {path_to_dot_notation(filename, start_dir): output}
 
 
-def get_doc_from_files(files:List[str], start_dir=None):
+def get_doc_from_files(files:List[str], start_dir=None, ignore_no_docstr:bool=False):
     """
     Generates a documentation dictionary from a list of files
     :param files: the list of the files to generate documentation from
     :param start_dir: the relative path to start each file's display name (in dot notation)
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: the documentation dictionary
     """
 
@@ -58,7 +60,7 @@ def get_doc_from_files(files:List[str], start_dir=None):
     for f in files:
 
         # get the documentation from each file
-        val = get_doc_from_file(f, start_dir)
+        val = get_doc_from_file(f, start_dir, ignore_no_docstr)
 
         # if no value is specifed, skip the file
         if val == {}:
@@ -71,11 +73,12 @@ def get_doc_from_files(files:List[str], start_dir=None):
     return output
 
 
-def get_doc_from_dir(path:str, start_dir=None):
+def get_doc_from_dir(path:str, start_dir=None, ignore_no_docstr:bool=False):
     """
     Generates a documentation dictionary from a single path (includes all files in directory, and subdirectories)
     :param path: the path to the files to generate documentation from
     :param start_dir: the relative path to start each file's display name (in dot notation)
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: the documentation dictionary
     """
 
@@ -93,7 +96,7 @@ def get_doc_from_dir(path:str, start_dir=None):
             if name.endswith(".py"):
 
                 # get a doc dict for the file
-                val = get_doc_from_file(os.path.join(root, name), start_dir)
+                val = get_doc_from_file(os.path.join(root, name), start_dir, ignore_no_docstr)
 
                 # if no value is specifed, skip the file
                 if val == {}:
@@ -205,11 +208,12 @@ def doc_to_html(doc:dict, filename:str=None):
 
 
 # region Python File To Dict Notation
-def file_to_dict(filename:str, start_dir:str):
+def file_to_dict(filename:str, start_dir:str, ignore_no_docstr:bool):
     """
     This function converts a file to dictionary notation
     :param filename: the path to the Python file
-    :param start_dir: the path to the start location of the dot notation
+    :param start_dir: the path to the start location of the dot notation,
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: the doc dict
     """
 
@@ -234,11 +238,11 @@ def file_to_dict(filename:str, start_dir:str):
 
     # parse the functions in the file, and add to the dictionary
     func = [f for f in tree.body if isinstance(f, _ast.FunctionDef)]
-    output["functions"] = parse_function(func)
+    output["functions"] = parse_function(func, ignore_no_docstr)
 
     # parse the classes in the file, and add to the dictionary
     classes = [cls for cls in tree.body if isinstance(cls, _ast.ClassDef)]
-    output["classes"] = parse_class(classes)
+    output["classes"] = parse_class(classes, ignore_no_docstr)
 
     # add the dot notation filename to the doc dict
     output["file"] = filename
@@ -247,10 +251,11 @@ def file_to_dict(filename:str, start_dir:str):
     return output
 
 
-def parse_function(func):
+def parse_function(func, ignore_no_docstr:bool):
     """
     This function converts the functions of a file to dict format
     :param func: The function tree
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: dict of function data
     """
 
@@ -261,6 +266,9 @@ def parse_function(func):
 
         # skip all items which are not functions
         if not type(f) is _ast.FunctionDef:
+            continue
+
+        if get_docstring(f.body) == MISSING_DOCSTRING_MESSAGE and ignore_no_docstr is True:
             continue
 
         # add the function, and the blank function info to the master dictionary
@@ -314,22 +322,27 @@ def get_docstring(body):
         if hasattr(b, 'value'):
             if type(b.value) is _ast.Str:
                 # if it is found, return it
-                return b.value.s
+                return b.value.s[1:-1].replace("\n", "\n\t\t\t\t")
 
         # otherwise, return the default message
         return MISSING_DOCSTRING_MESSAGE
 
 
-def parse_class(obj):
+def parse_class(obj, ignore_no_docstr:bool):
     """
     Parses the classes of a file, and returns a doc dict
     :param obj: the object to parse
+    :param ignore_no_docstr: If the system will ignore functions and classes without docstrings (allows private)
     :return: the doc dict of classes
     """
     classes = {}
     for c in obj:
+
+        if get_docstring(c.body) == MISSING_DOCSTRING_MESSAGE and ignore_no_docstr is True:
+            continue
+
         # for each class, parse the functions, and docstring, and add it to the doc dict
-        classes[c.name] = {"func": parse_function(c.body), "doc": get_docstring(c.body)}
+        classes[c.name] = {"func": parse_function(c.body, ignore_no_docstr), "doc": get_docstring(c.body)}
 
     # return it
     return classes
