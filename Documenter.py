@@ -278,6 +278,9 @@ def parse_function(func, ignore_no_docstr:bool):
         i = 0
         for a in f.args.args:
 
+            if a.arg == "self":
+                continue
+
             # get the arguement accepted datatype ('any' is the default value)
             data_type = "any"
             if a.annotation is not None:
@@ -471,15 +474,22 @@ def dict2ascii(mod_data: dict):
             output_text += base_tab + "\tDocstring:\n"
             output_text += base_tab + "\t\t" + func["doc"].replace("\n", "\n\t\t") + "\n"
 
-        # add the arguements
-        output_text += base_tab + "\tArguements:\n"
+        if len(func["args"]) > 0:
+            # add the arguements
+            output_text += base_tab + "\tArguements:\n"
 
-        # iterate over each arg
-        for arg in func["args"]:
+            # iterate over each arg
+            for arg in func["args"]:
 
-            # add the name, type, and value to the string
-            output_text += base_tab + "\t\t" + arg["name"] + " (" + arg["type"] + ") = " + str(arg["value"]) + "\n"
-        output_text += "\n"
+                # add the name, type, and value to the string
+                output_text += base_tab + "\t\t" + arg["name"]
+                if arg["type"] != "any":
+                    output_text += " (" + arg["type"] + ")"
+                if arg["value"] is not None:
+                    output_text += " = " + str(arg["value"])
+                output_text += "\n"
+
+            output_text += "\n"
 
         # return the text
         return output_text
