@@ -462,34 +462,52 @@ def dict2ascii(mod_data: dict):
         :return: the ASCII tree function
         """
 
+        # if func_name == "__init__":
+        #     base_tab = "\t" * (tab_level - 1)
+        # else:
+        #     # generate the base number of tabs
+        #     base_tab = "\t" * tab_level
+        #
+        #     # create the function name line
+        #     output_text = base_tab + func_name + "\n"
+
         # generate the base number of tabs
         base_tab = "\t" * tab_level
 
         # create the function name line
         output_text = base_tab + func_name + "\n"
 
+        display_params = not(":param " in func["doc"] or ":return:" in func["doc"])
+        doc = func["doc"]
+
         # if the function has a docstring, add it to the tree
         # will not display the docstring title if it is not defined
         if func["doc"] != MISSING_DOCSTRING_MESSAGE:
-            output_text += base_tab + "\tDocstring:\n"
-            output_text += base_tab + "\t\t" + func["doc"].replace("\n", "\n\t\t") + "\n"
+            if display_params:
+                output_text += base_tab + "\tDocstring:\n"
+            for i in doc.split("\n"):
+                if ":param " in i or ":return:" in i:
+                    output_text += base_tab + "\t\t" + i.replace("\t", "").replace(":param ", "").replace(":return:", "") + "\n"
+                else:
+                    output_text += base_tab + "\t\t" + i.replace("\t", "").replace("\n", "\n\t\t") + "\n"
 
         if len(func["args"]) > 0:
-            # add the arguements
-            output_text += base_tab + "\tArguements:\n"
+            if display_params:
+                # add the arguements
+                output_text += base_tab + "\tArguements:\n"
 
-            # iterate over each arg
-            for arg in func["args"]:
+                # iterate over each arg
+                for arg in func["args"]:
 
-                # add the name, type, and value to the string
-                output_text += base_tab + "\t\t" + arg["name"]
-                if arg["type"] != "any":
-                    output_text += " (" + arg["type"] + ")"
-                if arg["value"] is not None:
-                    output_text += " = " + str(arg["value"])
+                    # add the name, type, and value to the string
+                    output_text += base_tab + "\t\t" + arg["name"]
+                    if arg["type"] != "any":
+                        output_text += " (" + arg["type"] + ")"
+                    if arg["value"] is not None:
+                        output_text += " = " + str(arg["value"])
+                    output_text += "\n"
+
                 output_text += "\n"
-
-            output_text += "\n"
 
         # return the text
         return output_text
@@ -824,4 +842,3 @@ if __name__ == '__main__':
     # create the file
     output_types[output_type](doc_dict, output_file)
 # endregion
-
