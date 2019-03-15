@@ -9,6 +9,7 @@ from Documenter.Output.outJSON import doc_to_json
 from Documenter.Output.outMySQL import doc_to_mysql
 from Documenter.Output.outTxt import doc_to_txt
 from Documenter.Output.outXML import doc_to_xml
+from Documenter.Output.outSQLite import doc_to_sqlite
 from Documenter.Py2Dict import file_to_dict
 from Documenter.misc import path_to_dot_notation
 # endregion
@@ -113,7 +114,8 @@ if __name__ == '__main__':
         "json": doc_to_json,
         "xml": doc_to_xml,
         "mysql": doc_to_mysql,
-        "html": doc_to_html
+        "html": doc_to_html,
+        "sqlite": doc_to_sqlite
     }
 
     # if an insufficient number of args are specified, display help text, and exit with code -1
