@@ -41,15 +41,15 @@ path.to.file.py
                     Docstring:
                         Your Docstring
                     Arguements:
-                        arg1 (type)
-                        arg2 (type)     
+                        arg1 (type) = defaultValue
+                        arg2 (type) = defaultValue
     Functions:
         function_name
             Docstring:
                 Your Docstring
             Arguements:
-                arg1 (type)
-                arg2 (type)
+                arg1 (type) = defaultValue
+                arg2 (type) = defaultValue
 ```
 
 `doc_to_txt` is not the only output mode! Here are the other output modes you can use:
