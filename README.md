@@ -6,7 +6,7 @@ Document an entire directory:
 ```python
 from Documenter.Documenter import get_doc_from_dir, doc_to_txt
 
-doc = get_doc_from_dir("path_to_directory")
+doc = get_doc_from_dir("path/to/directory")
 doc_to_txt(doc, "output_file")
 ```
 
@@ -61,5 +61,7 @@ path.to.file.py
 `doc_to_xml` - Outputs as XML
 
 `doc_to_mysql` - Outputs as a file of MySQL queries to run on a MySQL database
+
+`doc_to_sqlite` - Outputs as a file of SQLite3 queries to run on a SQLite3 database
 
 `doc_to_html` - Outputs as an HTML file. All output is placed inside a `<div>` tag, with no other tags or styles
