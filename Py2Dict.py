@@ -91,7 +91,10 @@ def parse_function(func, ignore_no_docstr:bool):
         i += 1
 
         # add the function's docstring (if provided)
-        functions[f.name]["doc"] = get_docstring(f.body)
+        doc = get_docstring(f.body)
+        if f.name == "__init__":
+            doc = MISSING_DOCSTRING_MESSAGE
+        functions[f.name]["doc"] = doc
 
         # get the default arguement values, and reverse the list
         values = f.args.defaults
@@ -137,12 +140,22 @@ def parse_class(obj, ignore_no_docstr:bool):
     """
     classes = {}
     for c in obj:
+        doc = get_docstring(c.body)
+        func = parse_function(c.body, ignore_no_docstr)
+        if get_docstring(c.body) == MISSING_DOCSTRING_MESSAGE:
 
-        if get_docstring(c.body) == MISSING_DOCSTRING_MESSAGE and ignore_no_docstr is True:
-            continue
+            if "__init__" in func:
+                for f in c.body:
+                    if f.name == "__init__":
+                        doc = get_docstring(f.body)
+            else:
+                continue
+
+        # if get_docstring(c.body) == MISSING_DOCSTRING_MESSAGE and ignore_no_docstr is True:
+        #     continue
 
         # for each class, parse the functions, and docstring, and add it to the doc dict
-        classes[c.name] = {"func": parse_function(c.body, ignore_no_docstr), "doc": get_docstring(c.body)}
+        classes[c.name] = {"func": parse_function(c.body, ignore_no_docstr), "doc": doc}
 
     # return it
     return classes

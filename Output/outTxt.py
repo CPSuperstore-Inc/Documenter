@@ -56,11 +56,9 @@ def dict2ascii(mod_data: dict):
         # if the function has a docstring, add it to the tree
         # will not display the docstring title if it is not defined
         if func["doc"] != MISSING_DOCSTRING_MESSAGE:
-            if display_params:
-                output_text += base_tab + "\tDocstring:\n"
             for i in doc.split("\n"):
                 if ":param " in i or ":return:" in i:
-                    output_text += base_tab + "\t\t" + i.replace("\t", "").replace(":param ", "").replace(":return:", "") + "\n"
+                    output_text += base_tab + "\t\t" + i.replace("\t", "").replace(":param ", "").replace(":return:", "Returns") + "\n"
                 else:
                     output_text += base_tab + "\t\t" + i.replace("\t", "").replace("\n", "\n\t\t") + "\n"
 
@@ -116,12 +114,14 @@ def dict2ascii(mod_data: dict):
 
                 # add a docstring line if the class has a docstring
                 if c["doc"] != MISSING_DOCSTRING_MESSAGE:
-                    output += "\t\t\tDocstring:\n"
-                    output += "\t\t\t\t" + c["doc"].replace("\n", "\n\t\t") + "\n"
+                    # output += "\t\t\tDocstring:\n"
+                    output += "\t\t\t" + c["doc"].replace("\n\t", "\n").replace(":param ", "").replace(":return: ", "Returns ") + "\n"
 
                 # display the classes functions
                 output += "\t\t\tMethods:\n"
                 for n, f in c["func"].items():
+                    if n.startswith("__"):
+                        continue
                     output += display_function(4, n, f)
 
         # if the file has funcitons, display the functions

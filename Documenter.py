@@ -3,6 +3,7 @@ import os
 import sys
 from typing import List
 
+# these modules are imported thie way to allow the calling file to access them
 from Documenter.GlobalVariable import HELP_TEXT
 from Documenter.Output.outHTML import doc_to_html
 from Documenter.Output.outJSON import doc_to_json
@@ -10,6 +11,7 @@ from Documenter.Output.outMySQL import doc_to_mysql
 from Documenter.Output.outTxt import doc_to_txt
 from Documenter.Output.outXML import doc_to_xml
 from Documenter.Output.outSQLite import doc_to_sqlite
+from Documenter.Output.outMD import doc_to_md
 from Documenter.Py2Dict import file_to_dict
 from Documenter.misc import path_to_dot_notation
 # endregion
@@ -115,7 +117,8 @@ if __name__ == '__main__':
         "xml": doc_to_xml,
         "mysql": doc_to_mysql,
         "html": doc_to_html,
-        "sqlite": doc_to_sqlite
+        "sqlite": doc_to_sqlite,
+        "md": doc_to_md
     }
 
     # if an insufficient number of args are specified, display help text, and exit with code -1
